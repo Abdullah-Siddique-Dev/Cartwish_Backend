@@ -4,6 +4,10 @@ import mongoose from "mongoose";
 
 const app = express();
 
+import { router as userRoutes } from "./routes/users.js";
+
+
+
 const MONGO_URI="mongodb+srv://cartwish:cart123@cluster0.b3gdydm.mongodb.net/"
 
 
@@ -20,6 +24,10 @@ async function connectDB(){
     }
 }
 
+
+app.use(express.json());
+
+app.use("/api/user",userRoutes);
 
 
 const port =3000;
