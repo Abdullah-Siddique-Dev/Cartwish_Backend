@@ -2,12 +2,26 @@
 import express from "express";
 import User from "../models/users.js";
 import bcrypt from "bcrypt";
+import Joi from "joi";
+
+
+const createUserSchema = Joi.object({
+    name:Joi.string().min(3).required(),
+    email:Joi.string().email().required(),
+    password:Joi.string().min(6).required(),
+    deliveryAddress:Joi.string().min(5).required()
+})
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
     try {
         const { name, email, password, deliveryAddress } = req.body;
+
+      const joiValidation=  createUserSchema.validate(req.body);
+      if(joiValidation.error){
+        return res.status(400).json(joiValidation.error.details[0].message);
+      }
 
         const user = await User.findOne({
             email: email
