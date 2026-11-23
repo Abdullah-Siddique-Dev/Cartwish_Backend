@@ -1,43 +1,83 @@
+
 import express from "express";
+import User from "../models/users.js";
+import Joi from "joi";
+import { hashPassword } from "../utils/hashpass.js";
+import jwt from "jsonwebtoken";
 
-import mongoose from "mongoose";
+const createUserSchema = Joi.object({
+    name: Joi.string().min(3).required(),
+    email: Joi.string().email().required(),
+    password: Joi.string().min(6).required(),
+    deliveryAddress: Joi.string().min(5).required()
+});
 
-const app = express();
+const router = express.Router();
 
-import { router as userRoutes } from "./routes/users.js";
+router.post("/", async (req, res) => {
+    try {
+        const { name, email, password, deliveryAddress } = req.body;
 
+        const joiValidation = createUserSchema.validate(req.body);
 
+        if (joiValidation.error) {
+            return res.status(400).json({
+                message: joiValidation.error.details[0].message
+            });
+        }
 
-const MONGO_URI="mongodb+srv://cartwish:cart123@cluster0.b3gdydm.mongodb.net/"
+        const user = await User.findOne({
+            email: email
+        });
 
+        if (user) {
+            return res.status(400).json({
+                message: "User already exist."
+            });
+        }
 
-async function connectDB(){
-    try{
+        const hashedPassword = await hashPassword(password);
 
-       await  mongoose.connect(MONGO_URI);
+        const newUser = new User({
+            name: name,
+            email: email,
+            password: hashedPassword,
+            deliveryAddress: deliveryAddress,
+        });
 
-       console.log("Mongodb Connected Successfully!")
+        await newUser.save();
+
+        // Generate JWT Token
+        const token = jwt.sign(
+            {
+                _id: newUser._id,
+                role: newUser.role
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "7d"
+            }
+        );
+
+        res.status(201).json({
+            message: "User registered successfully",
+            token: token,
+            user: {
+                _id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                deliveryAddress: newUser.deliveryAddress
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            message: "Server error"
+        });
     }
-    catch(err){
+});
 
-        console.log(`Failed to connect`, err);
-    }
-}
-
-
-app.use(express.json());
-
-app.use("/api/user",userRoutes);
-
-
-const port =3000;
-
-app.use(express.json());
-
-app.listen(port,()=>{
-    console.log(`App is listening at  port ${port}`);
-})
-
-connectDB();
-
-
+export default router;

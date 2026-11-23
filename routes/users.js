@@ -3,6 +3,7 @@ import express from "express";
 import User from "../models/users.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
+import jsonwebtoken from "jsonwebtoken";
 
 
 const createUserSchema = Joi.object({
@@ -60,4 +61,7 @@ router.post("/", async (req, res) => {
     }
 });
 
+
+const token = Jwt.sign({_id:newUser._id, name:newUser.name}, "jwtSecurityKey");
+res.status(201).json(newUser);
 export default router;
