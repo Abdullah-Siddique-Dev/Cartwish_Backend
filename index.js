@@ -4,6 +4,7 @@ import User from "../models/users.js";
 import Joi from "joi";
 import { hashPassword } from "../utils/hashpass.js";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv"
 
 const createUserSchema = Joi.object({
     name: Joi.string().min(3).required(),

@@ -62,6 +62,12 @@ router.post("/", async (req, res) => {
 });
 
 
-const token = Jwt.sign({_id:newUser._id, name:newUser.name}, "jwtSecurityKey");
+const token = Jwt.sign({_id:newUser._id, name:newUser.name}, 
+    process.env.JWT_KEY,
+    {expiresIn:"2h"}
+
+);
+
+
 res.status(201).json(newUser);
 export default router;
