@@ -3,7 +3,7 @@ import express from "express";
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import Joi from "joi";
-import jsonwebtoken from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import {comparePassword} from "../hashpass.js";
 
 
@@ -44,11 +44,26 @@ router.post("/", async (req, res) => {
 
         await newUser.save();
 
-        res.status(201).json({
-            message: "User registered successfully",
-            user: {
+        // Generate JWT token for new user
+        const token = jwt.sign(
+            {
+                _id: newUser._id, 
                 name: newUser.name,
                 email: newUser.email,
+                role: newUser.role
+            }, 
+            process.env.JWT_KEY,
+            { expiresIn: "7d" }
+        );
+
+        res.status(201).json({
+            message: "User registered successfully",
+            token: token,
+            user: {
+                _id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
                 deliveryAddress: newUser.deliveryAddress,
             }
         });
@@ -61,13 +76,6 @@ router.post("/", async (req, res) => {
         });
     }
 });
-
-
-const token = Jwt.sign({_id:newUser._id, name:newUser.name}, 
-    process.env.JWT_KEY,
-    {expiresIn:"2h"}
-
-);
 
 
 router.post("/login", async (req, res)=>{
@@ -114,12 +122,14 @@ router.post("/login", async (req, res)=>{
 
             res.status(200).json({
                 message:"Login successful",
+                token: token,
                 user:{
+                    _id: user._id,
                     name:user.name,
                     email:user.email,
                     role:user.role
                 }
-            })
+            });
 
 
     }
@@ -129,7 +139,6 @@ router.post("/login", async (req, res)=>{
             message:"Server error"
         });
     }
-})
+});
 
-res.status(201).json(newUser);
 export default router;
