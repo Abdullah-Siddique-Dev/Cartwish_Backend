@@ -1,12 +1,12 @@
-import express from "express"
-const passport from "passport"
+import express from "express";
+import passport from "passport";
 
-const router=express.Router();
+const router = express.Router();
 
-app.get('/auth/google',
-    passport.authentication('google',{
-        scope:['email','profile']
+router.get('/auth/google',
+    passport.authenticate('google', {
+        scope: ['email', 'profile']
     })
-)
+);
 
-module.exports = router;
+export default router;
