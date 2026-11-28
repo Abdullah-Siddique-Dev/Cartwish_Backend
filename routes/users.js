@@ -101,6 +101,17 @@ router.post("/login", async (req, res)=>{
                 });
             }
 
+            const token=jwt.sign({
+                _id:user._id,
+                email:user.email,
+                role:user.role
+            
+            },
+            process.env.JWT_KEY,
+            {expiresIn:"7d"}
+        );
+
+
             res.status(200).json({
                 message:"Login successful",
                 user:{

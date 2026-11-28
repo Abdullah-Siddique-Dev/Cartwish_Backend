@@ -1,84 +1,49 @@
-
 import express from "express";
-import User from "../models/users.js";
-import Joi from "joi";
-import { hashPassword } from "../utils/hashpass.js";
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv"
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import passport from "./config/passport.js";
 
-const createUserSchema = Joi.object({
-    name: Joi.string().min(3).required(),
-    email: Joi.string().email().required(),
-    password: Joi.string().min(6).required(),
-    deliveryAddress: Joi.string().min(5).required()
-});
+// Import routes
+import userRoutes from "./routes/users.js";
+import authRoutes from "./routes/auth.js";
 
-const router = express.Router();
+dotenv.config();
 
-router.post("/", async (req, res) => {
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ═══════════════════════════════════════════════════════════
+// MIDDLEWARE
+// ═══════════════════════════════════════════════════════════
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Initialize Passport
+app.use(passport.initialize());
+
+// ═══════════════════════════════════════════════════════════
+// ROUTES
+// ═══════════════════════════════════════════════════════════
+app.use("/api/user", userRoutes);
+app.use("/auth", authRoutes);  // Google OAuth routes
+
+// ═══════════════════════════════════════════════════════════
+// MONGODB CONNECTION
+// ═══════════════════════════════════════════════════════════
+async function connectDB() {
     try {
-        const { name, email, password, deliveryAddress } = req.body;
-
-        const joiValidation = createUserSchema.validate(req.body);
-
-        if (joiValidation.error) {
-            return res.status(400).json({
-                message: joiValidation.error.details[0].message
-            });
-        }
-
-        const user = await User.findOne({
-            email: email
-        });
-
-        if (user) {
-            return res.status(400).json({
-                message: "User already exist."
-            });
-        }
-
-        const hashedPassword = await hashPassword(password);
-
-        const newUser = new User({
-            name: name,
-            email: email,
-            password: hashedPassword,
-            deliveryAddress: deliveryAddress,
-        });
-
-        await newUser.save();
-
-        // Generate JWT Token
-        const token = jwt.sign(
-            {
-                _id: newUser._id,
-                role: newUser.role
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: "7d"
-            }
-        );
-
-        res.status(201).json({
-            message: "User registered successfully",
-            token: token,
-            user: {
-                _id: newUser._id,
-                name: newUser.name,
-                email: newUser.email,
-                role: newUser.role,
-                deliveryAddress: newUser.deliveryAddress
-            }
-        });
-
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log("✅ MongoDB Connected Successfully!");
     } catch (err) {
-        console.error(err);
-
-        res.status(500).json({
-            message: "Server error"
-        });
+        console.error("❌ MongoDB Connection Failed:", err);
+        process.exit(1);
     }
-});
+}
 
-export default router;
+// ═══════════════════════════════════════════════════════════
+// START SERVER
+// ═══════════════════════════════════════════════════════════
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    connectDB();
+});
